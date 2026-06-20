@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My planner</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:       #fdf4f5;
+    --bg2:      #f9eaec;
+    --bg3:      #f3dde0;
+    --card:     #ffffff;
+    --pink:     #e8a0ae;
+    --pink-mid: #d4788a;
+    --pink-deep:#b05268;
+    --text:     #3a2329;
+    --text2:    #8a5f67;
+    --text3:    #b899a0;
+    --border:   rgba(180,100,120,0.15);
+    --border2:  rgba(180,100,120,0.28);
+    --radius:   12px;
+    --radius-sm:8px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  #auth-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; padding: 2rem; }
+  #auth-screen h1 { font-size: 22px; font-weight: 500; color: var(--text); }
+  #auth-screen p { font-size: 15px; color: var(--text2); text-align: center; max-width: 320px; line-height: 1.6; }
+  .google-btn { display: flex; align-items: center; gap: 10px; padding: 10px 20px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--card); color: var(--text); font-size: 15px; font-family: inherit; cursor: pointer; transition: background 0.12s; }
+  .google-btn:hover { background: var(--bg2); }
+  .google-btn svg { width: 18px; height: 18px; }
+
+  #app { display: none; }
+  .user-bar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 1.25rem 0; font-size: 12px; color: var(--text3); max-width: 660px; margin: 0 auto; }
+  .user-bar span { display: flex; align-items: center; gap: 5px; }
+  .signout-btn { background: none; border: none; font-size: 12px; color: var(--text3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; font-family: inherit; padding: 0; }
+  .signout-btn:hover { color: var(--pink-deep); }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #81c784; display: inline-block; }
+  .sync-dot.saving { background: var(--pink); }
+
+  .app { max-width: 660px; margin: 0 auto; padding: 1.5rem 1.25rem 5rem; }
+  .date-header { font-size: 26px; font-weight: 500; margin-bottom: 2px; }
+  .date-sub { font-size: 15px; color: var(--text2); margin-bottom: 1.5rem; }
+
+  nav { display: flex; gap: 4px; margin-bottom: 1.5rem; background: var(--bg3); border-radius: var(--radius); padding: 4px; }
+  nav button { flex: 1; background: none; border: none; border-radius: var(--radius-sm); padding: 8px 10px; font-size: 14px; font-weight: 500; color: var(--text2); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+  nav button.active { background: var(--card); color: var(--pink-deep); box-shadow: 0 1px 4px rgba(180,100,120,0.15); }
+  nav button:hover:not(.active) { color: var(--text); background: rgba(180,100,120,0.08); }
+
+  .view { display: none; } .view.active { display: block; }
+  .section { background: var(--card); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 12px; }
+
+  .add-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .add-row input { flex: 1; font-size: 14px; padding: 7px 11px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); color: var(--text); outline: none; font-family: inherit; }
+  .add-row input:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(232,160,174,0.2); }
+  .add-row button { padding: 7px 14px; font-size: 14px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); color: var(--text2); cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 4px; transition: background 0.12s; }
+  .add-row button:hover { background: var(--bg3); color: var(--text); }
+
+  .todo-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid var(--border); }
+  .todo-item:last-child { border-bottom: none; }
+  .todo-item input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: var(--pink-deep); }
+  .todo-item span { flex: 1; font-size: 14px; line-height: 1.4; }
+  .todo-item span.done { text-decoration: line-through; color: var(--text3); }
+  .todo-item .del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; opacity: 0; transition: opacity 0.1s; padding: 2px; line-height: 1; }
+  .todo-item:hover .del { opacity: 1; }
+
+  .goal-add-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .goal-add-row input[type=text] { flex: 1; min-width: 140px; font-size: 14px; padding: 7px 11px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); color: var(--text); outline: none; font-family: inherit; }
+  .goal-add-row input[type=number] { width: 72px; font-size: 14px; padding: 7px 11px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); color: var(--text); outline: none; font-family: inherit; }
+  .goal-add-row input:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(232,160,174,0.2); }
+  .goal-add-row button { padding: 7px 14px; font-size: 14px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); color: var(--text2); cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 4px; transition: background 0.12s; }
+  .goal-add-row button:hover { background: var(--bg3); color: var(--text); }
+
+  .goal-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .goal-item:last-child { border-bottom: none; }
+  .goal-info { flex: 1; }
+  .goal-name { font-size: 14px; font-weight: 500; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+  .goal-bar-wrap { height: 5px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+  .goal-bar { height: 100%; background: linear-gradient(90deg, var(--pink) 0%, var(--pink-deep) 100%); border-radius: 99px; transition: width 0.35s; }
+  .goal-counter { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .goal-counter span { font-size: 13px; color: var(--text2); min-width: 42px; text-align: center; }
+  .goal-counter button { width: 28px; height: 28px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); color: var(--text2); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: background 0.12s; }
+  .goal-counter button:hover { background: var(--bg3); color: var(--text); }
+  .goal-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; opacity: 0; transition: opacity 0.1s; flex-shrink: 0; }
+  .goal-item:hover .goal-del { opacity: 1; }
+  .done-badge { font-size: 11px; background: #fde8ed; color: var(--pink-deep); border-radius: 99px; padding: 2px 9px; font-weight: 500; }
+
+  .gratitude-area { width: 100%; min-height: 96px; font-size: 14px; font-family: inherit; color: var(--text); background: var(--bg2); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 12px; resize: vertical; line-height: 1.6; outline: none; }
+  .gratitude-area:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(232,160,174,0.2); }
+  .grat-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .save-hint { font-size: 12px; color: var(--text3); font-style: italic; height: 16px; }
+  .small-link { background: none; border: none; font-size: 12px; color: var(--text3); cursor: pointer; font-family: inherit; text-decoration: underline; text-underline-offset: 2px; padding: 0; }
+  .small-link:hover { color: var(--pink-deep); }
+
+  .stars-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 0.5px solid var(--border); }
+  .stars-label { font-size: 13px; color: var(--text2); flex-shrink: 0; }
+  .stars { display: flex; gap: 4px; }
+  .stars button { background: none; border: none; cursor: pointer; font-size: 22px; padding: 0; line-height: 1; color: var(--bg3); transition: color 0.1s, transform 0.1s; }
+  .stars button.lit { color: var(--pink); }
+  .stars button:hover { transform: scale(1.15); }
+  .mood-cal-link { margin-left: auto; }
+
+  .log-section { margin-top: 14px; }
+  .log-entry { padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .log-entry:last-child { border-bottom: none; }
+  .log-date { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+  .log-text { font-size: 13px; color: var(--text2); line-height: 1.5; white-space: pre-wrap; }
+
+  .empty { font-size: 13px; color: var(--text3); padding: 4px 0; font-style: italic; }
+
+  .mission-item { padding: 10px 0; border-bottom: 0.5px solid var(--border); position: relative; }
+  .mission-item:last-child { border-bottom: none; }
+  .mission-del { position: absolute; right: 0; top: 10px; background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; opacity: 0; transition: opacity 0.1s; }
+  .mission-item:hover .mission-del { opacity: 1; }
+  .mission-name { font-size: 14px; font-weight: 500; border: none; background: none; color: var(--text); outline: none; width: calc(100% - 22px); font-family: inherit; }
+  .mission-name::placeholder { color: var(--text3); }
+  .mission-notes { width: 100%; font-size: 13px; font-family: inherit; color: var(--text2); background: none; border: none; outline: none; resize: none; line-height: 1.5; margin-top: 4px; }
+  .mission-notes::placeholder { color: var(--text3); }
+
+  .goal-sub-item { padding: 6px 0 6px 12px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .goal-sub-item:last-child { border-bottom: none; }
+  .goal-sub-item input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--pink-deep); flex-shrink: 0; cursor: pointer; }
+  .goal-sub-item span { flex: 1; font-size: 13px; color: var(--text2); }
+  .goal-sub-item span.done { text-decoration: line-through; color: var(--text3); }
+  .goal-sub-item .del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; opacity: 0; }
+  .goal-sub-item:hover .del { opacity: 1; }
+
+  .add-btn { font-size: 13px; color: var(--text3); background: none; border: 0.5px dashed var(--border2); border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; width: 100%; margin-top: 8px; display: flex; align-items: center; gap: 6px; justify-content: center; font-family: inherit; transition: background 0.12s; }
+  .add-btn:hover { background: var(--bg2); color: var(--text2); }
+
+  .add-sub-row { display: flex; gap: 6px; margin-top: 6px; padding-left: 12px; }
+  .add-sub-row input { flex: 1; font-size: 13px; padding: 5px 9px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); color: var(--text); outline: none; font-family: inherit; }
+  .add-sub-row input:focus { border-color: var(--pink); }
+  .add-sub-row button { font-size: 13px; padding: 5px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); color: var(--text2); cursor: pointer; font-family: inherit; }
+  .add-sub-row button:hover { background: var(--bg3); }
+  .mission-goals-section { margin-top: 6px; border-top: 0.5px solid var(--border); }
+  .toggle-goals { background: none; border: none; font-size: 12px; color: var(--text3); cursor: pointer; padding: 4px 0; display: flex; align-items: center; gap: 4px; font-family: inherit; margin-top: 4px; }
+  .toggle-goals:hover { color: var(--text2); }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(58,35,41,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .modal { background: var(--card); border-radius: var(--radius); padding: 1.25rem; max-width: 520px; width: 100%; max-height: 80vh; overflow-y: auto; border: 0.5px solid var(--border2); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .modal-header h3 { font-size: 15px; font-weight: 500; }
+  .modal-close { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 18px; padding: 2px; line-height: 1; }
+  .modal-close:hover { color: var(--text); }
+  .moment-entry { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .moment-entry:last-child { border-bottom: none; }
+  .moment-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .moment-date { font-size: 11px; color: var(--text3); }
+  .moment-mood { font-size: 13px; color: var(--pink-mid); }
+  .moment-text { font-size: 13px; color: var(--text2); line-height: 1.5; white-space: pre-wrap; }
+
+  .mood-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 8px; }
+  .mood-day-label { font-size: 10px; color: var(--text3); text-align: center; padding-bottom: 2px; font-weight: 500; }
+  .mood-cell { aspect-ratio: 1; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; }
+  .mood-cell.empty { background: transparent; }
+  .mood-cell.no-data { background: var(--bg3); color: var(--text3); }
+  .mood-cell.m1 { background: #f5c2cb; color: #8b3a48; }
+  .mood-cell.m2 { background: #f9d5da; color: #9e5060; }
+  .mood-cell.m3 { background: #fce8ea; color: #b06070; }
+  .mood-cell.m4 { background: #e8f5e9; color: #2e7d32; }
+  .mood-cell.m5 { background: #c8e6c9; color: #1b5e20; }
+  .mood-legend { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .mood-legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text2); }
+  .mood-legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .month-nav button { background: none; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 4px 10px; font-size: 13px; cursor: pointer; color: var(--text2); font-family: inherit; }
+  .month-nav button:hover { background: var(--bg2); }
+  .month-nav span { font-size: 14px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div id="auth-screen">
+  <h1>My planner</h1>
+  <p>Sign in with Google to sync your tasks, goals, and moments across all your devices.</p>
+  <button class="google-btn" id="signin-btn">
+    <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+    Sign in with Google
+  </button>
+</div>
+
+<div id="app">
+  <div class="user-bar">
+    <span><span class="sync-dot" id="sync-dot"></span> <span id="user-name"></span></span>
+    <button class="signout-btn" id="signout-btn">sign out</button>
+  </div>
+
+  <div class="app">
+    <p class="date-header" id="today-name"></p>
+    <p class="date-sub" id="today-date"></p>
+
+    <nav>
+      <button class="active" id="nav-daily"><i class="ti ti-sun"></i> Today</button>
+      <button id="nav-weekly"><i class="ti ti-calendar-week"></i> This week</button>
+      <button id="nav-missions"><i class="ti ti-flag"></i> Missions & goals</button>
+    </nav>
+
+    <div id="view-daily" class="view active">
+      <div class="section">
+        <p class="section-title">Today's tasks</p>
+        <div class="add-row">
+          <input id="daily-input" placeholder="Add a task…">
+          <button id="daily-add-btn"><i class="ti ti-plus"></i> Add</button>
+        </div>
+        <div id="daily-list"></div>
+      </div>
+
+      <div class="section">
+        <p class="section-title">Weekly goals — this week</p>
+        <div class="goal-add-row">
+          <input type="text" id="goal-name-input" placeholder="Goal name (e.g. Pilates)">
+          <input type="number" id="goal-target-input" min="1" max="99" placeholder="×/wk" title="Times per week">
+          <button id="goal-add-btn"><i class="ti ti-plus"></i> Add</button>
+        </div>
+        <div id="goals-list"></div>
+      </div>
+
+      <div class="section">
+        <p class="section-title">Grateful for / happy moments</p>
+        <textarea id="gratitude-input" class="gratitude-area" placeholder="What made you smile today? What are you grateful for?" rows="4"></textarea>
+        <div class="grat-footer">
+          <p class="save-hint" id="gratitude-status"></p>
+          <button class="small-link" id="moments-btn">see all moments</button>
+        </div>
+        <div class="stars-row">
+          <span class="stars-label">Today's mood</span>
+          <div class="stars" id="stars-row"></div>
+          <button class="small-link mood-cal-link" id="mood-cal-btn">monthly view</button>
+        </div>
+        <div id="gratitude-log"></div>
+      </div>
+    </div>
+
+    <div id="view-weekly" class="view">
+      <div class="section">
+        <p class="section-title">This week's tasks</p>
+        <div class="add-row">
+          <input id="weekly-input" placeholder="Add a task for this week…">
+          <button id="weekly-add-btn"><i class="ti ti-plus"></i> Add</button>
+        </div>
+        <div id="weekly-list"></div>
+      </div>
+    </div>
+
+    <div id="view-missions" class="view">
+      <div class="section">
+        <p class="section-title">Missions</p>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Big-picture intentions. Each mission can hold goals beneath it.</p>
+        <div id="missions-list"></div>
+        <button class="add-btn" id="add-mission-btn"><i class="ti ti-plus"></i> Add mission</button>
+      </div>
+      <div class="section">
+        <p class="section-title">Goals</p>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Concrete goals that move a mission forward. Add tasks beneath each goal.</p>
+        <div id="goals-mission-list"></div>
+        <button class="add-btn" id="add-mgoal-btn"><i class="ti ti-plus"></i> Add goal</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-moments" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>All happy moments</h3>
+        <button class="modal-close" id="moments-close"><i class="ti ti-x"></i></button>
+      </div>
+      <div id="modal-moments-body"></div>
+    </div>
+  </div>
+
+  <div id="modal-mood" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Monthly mood</h3>
+        <button class="modal-close" id="mood-close"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="month-nav">
+        <button id="mood-prev"><i class="ti ti-chevron-left"></i></button>
+        <span id="mood-month-label"></span>
+        <button id="mood-next"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="mood-grid" id="mood-grid"></div>
+      <div class="mood-legend">
+        <span class="mood-legend-item"><span class="mood-legend-dot" style="background:#f5c2cb"></span> 1 — rough</span>
+        <span class="mood-legend-item"><span class="mood-legend-dot" style="background:#f9d5da"></span> 2 — low</span>
+        <span class="mood-legend-item"><span class="mood-legend-dot" style="background:#fce8ea"></span> 3 — okay</span>
+        <span class="mood-legend-item"><span class="mood-legend-dot" style="background:#e8f5e9"></span> 4 — good</span>
+        <span class="mood-legend-item"><span class="mood-legend-dot" style="background:#c8e6c9"></span> 5 — great</span>
+        <span class="mood-legend-item"><span class="mood-legend-dot" style="background:var(--bg3)"></span> no entry</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBBCJY-XbmjrYU7p7_3i4j9spDQ_xbaDTU",
+  authDomain: "task-app-43899.firebaseapp.com",
+  projectId: "task-app-43899",
+  storageBucket: "task-app-43899.firebasestorage.app",
+  messagingSenderId: "306477750288",
+  appId: "1:306477750288:web:7b987636bce22f77441295"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+
+let uid = null;
+let syncTimer = null;
+
+function setSyncStatus(saving) {
+  const dot = document.getElementById('sync-dot');
+  if(dot) dot.className = 'sync-dot' + (saving ? ' saving' : '');
+}
+
+function S(k) { return JSON.parse(localStorage.getItem('tm_'+k)||'null'); }
+function W(k, v) {
+  localStorage.setItem('tm_'+k, JSON.stringify(v));
+  if(!uid) return;
+  setSyncStatus(true);
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(async () => {
+    await setDoc(doc(db, 'users', uid, 'data', k), { v: JSON.stringify(v) });
+    setSyncStatus(false);
+  }, 400);
+}
+
+async function loadFromFirestore() {
+  const snap = await getDocs(collection(db, 'users', uid, 'data'));
+  snap.forEach(d => localStorage.setItem('tm_'+d.id, d.data().v));
+}
+
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const now = new Date();
+
+function getWeekKey() {
+  const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-d.getDay());
+  return d.toISOString().slice(0,10);
+}
+function getTodayKey() { return now.toISOString().slice(0,10); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(iso) { const d=new Date(iso+'T12:00:00'); return DAYS[d.getDay()]+', '+MONTHS[d.getMonth()]+' '+d.getDate(); }
+
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  ['daily','weekly','missions'].forEach(name => document.getElementById('nav-'+name).classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.getElementById('nav-'+v).classList.add('active');
+}
+
+function renderDailyTodos() {
+  const todos = S('daily_'+getTodayKey())||[];
+  const el = document.getElementById('daily-list');
+  if(!todos.length) { el.innerHTML='<p class="empty">No tasks yet — add one above</p>'; return; }
+  el.innerHTML = todos.map((t,i)=>`
+    <div class="todo-item">
+      <input type="checkbox" ${t.done?'checked':''} data-action="toggle-daily" data-i="${i}">
+      <span class="${t.done?'done':''}">${esc(t.text)}</span>
+      <button class="del" data-action="del-daily" data-i="${i}" aria-label="Delete"><i class="ti ti-x"></i></button>
+    </div>`).join('');
+}
+function addDailyTodo() {
+  const inp=document.getElementById('daily-input');
+  const text=inp.value.trim(); if(!text) return;
+  const key='daily_'+getTodayKey(); const todos=S(key)||[];
+  todos.push({text,done:false}); W(key,todos); inp.value=''; renderDailyTodos();
+}
+
+function renderWeeklyTodos() {
+  const todos=S('weekly_'+getWeekKey())||[];
+  const el=document.getElementById('weekly-list');
+  if(!todos.length) { el.innerHTML='<p class="empty">No tasks for this week yet</p>'; return; }
+  el.innerHTML=todos.map((t,i)=>`
+    <div class="todo-item">
+      <input type="checkbox" ${t.done?'checked':''} data-action="toggle-weekly" data-i="${i}">
+      <span class="${t.done?'done':''}">${esc(t.text)}</span>
+      <button class="del" data-action="del-weekly" data-i="${i}" aria-label="Delete"><i class="ti ti-x"></i></button>
+    </div>`).join('');
+}
+function addWeeklyTodo() {
+  const inp=document.getElementById('weekly-input');
+  const text=inp.value.trim(); if(!text) return;
+  const key='weekly_'+getWeekKey(); const todos=S(key)||[];
+  todos.push({text,done:false}); W(key,todos); inp.value=''; renderWeeklyTodos();
+}
+
+function renderGoals() {
+  const goals=S('goals')||[];
+  const wk=getWeekKey();
+  const el=document.getElementById('goals-list');
+  if(!goals.length) { el.innerHTML='<p class="empty">Add a recurring goal above — it carries forward every week until deleted</p>'; return; }
+  el.innerHTML=goals.map((g,i)=>{
+    const progress=S('goal_progress_'+wk+'_'+i)||0;
+    const done=progress>=g.target;
+    const pct=Math.min(100,Math.round(progress/g.target*100));
+    return `<div class="goal-item">
+      <div class="goal-info">
+        <p class="goal-name">${esc(g.name)} ${done?'<span class="done-badge">Done ✓</span>':''}</p>
+        <div class="goal-bar-wrap"><div class="goal-bar" style="width:${pct}%"></div></div>
+      </div>
+      <div class="goal-counter">
+        <button data-action="goal-dec" data-i="${i}">−</button>
+        <span>${progress} / ${g.target}</span>
+        <button data-action="goal-inc" data-i="${i}">+</button>
+      </div>
+      <button class="goal-del" data-action="del-goal" data-i="${i}" aria-label="Delete"><i class="ti ti-x"></i></button>
+    </div>`;
+  }).join('');
+}
+function addGoal() {
+  const name=document.getElementById('goal-name-input').value.trim();
+  const target=parseInt(document.getElementById('goal-target-input').value)||3;
+  if(!name) return;
+  const goals=S('goals')||[];
+  goals.push({name,target}); W('goals',goals);
+  document.getElementById('goal-name-input').value='';
+  document.getElementById('goal-target-input').value='';
+  renderGoals();
+}
+
+let gratTimer;
+function saveGratitude() {
+  clearTimeout(gratTimer);
+  const st=document.getElementById('gratitude-status');
+  gratTimer=setTimeout(()=>{
+    W('grat_'+getTodayKey(), document.getElementById('gratitude-input').value);
+    st.textContent='Saved'; setTimeout(()=>{ st.textContent=''; },2000);
+  },600);
+}
+function renderGratitudeLog() {
+  const entries=[];
+  for(let i=1;i<=14;i++) {
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const dk=d.toISOString().slice(0,10);
+    const val=S('grat_'+dk);
+    if(val&&val.trim()) entries.push({date:dk,text:val});
+  }
+  const el=document.getElementById('gratitude-log');
+  if(!entries.length){el.innerHTML='';return;}
+  el.innerHTML='<div class="log-section"><p class="section-title" style="margin-bottom:8px">Recent moments</p>'+
+    entries.slice(0,5).map(e=>`<div class="log-entry"><p class="log-date">${fmtDate(e.date)}</p><p class="log-text">${esc(e.text)}</p></div>`).join('')+'</div>';
+}
+
+function renderStars() {
+  const saved=S('mood_'+getTodayKey())||0;
+  const el=document.getElementById('stars-row');
+  el.innerHTML=[1,2,3,4,5].map(n=>`
+    <button data-action="set-mood" data-n="${n}" data-preview="true" aria-label="${n} star${n>1?'s':''}" class="${n<=saved?'lit':''}">★</button>`).join('');
+}
+
+function openMomentsModal() {
+  const entries=[];
+  for(let i=0;i<365;i++) {
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const dk=d.toISOString().slice(0,10);
+    const val=S('grat_'+dk); const mood=S('mood_'+dk)||0;
+    if(val&&val.trim()) entries.push({date:dk,text:val,mood});
+  }
+  const el=document.getElementById('modal-moments-body');
+  el.innerHTML=entries.length ? entries.map(e=>`
+    <div class="moment-entry">
+      <div class="moment-meta">
+        <span class="moment-date">${fmtDate(e.date)}</span>
+        ${e.mood?`<span class="moment-mood">${'★'.repeat(e.mood)}${'☆'.repeat(5-e.mood)}</span>`:''}
+      </div>
+      <p class="moment-text">${esc(e.text)}</p>
+    </div>`).join('') : '<p class="empty">No moments logged yet.</p>';
+  document.getElementById('modal-moments').style.display='flex';
+}
+
+let moodMonthOffset=0;
+function openMoodModal() { moodMonthOffset=0; renderMoodGrid(); document.getElementById('modal-mood').style.display='flex'; }
+function renderMoodGrid() {
+  const ref=new Date(now.getFullYear(),now.getMonth()+moodMonthOffset,1);
+  const year=ref.getFullYear(), month=ref.getMonth();
+  document.getElementById('mood-month-label').textContent=MONTHS[month]+' '+year;
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const firstDow=new Date(year,month,1).getDay();
+  const DL=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let html=DL.map(d=>`<div class="mood-day-label">${d}</div>`).join('');
+  for(let i=0;i<firstDow;i++) html+=`<div class="mood-cell empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++) {
+    const dk=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const mood=S('mood_'+dk);
+    const isFuture=new Date(dk+'T12:00:00')>now;
+    if(isFuture) html+=`<div class="mood-cell empty" title="${d}"></div>`;
+    else if(!mood) html+=`<div class="mood-cell no-data" title="${d} — no entry">${d}</div>`;
+    else html+=`<div class="mood-cell m${mood}" title="${d} — ${mood} star${mood>1?'s':''}">${d}</div>`;
+  }
+  document.getElementById('mood-grid').innerHTML=html;
+}
+
+function renderMissions() {
+  const missions=S('missions')||[];
+  const el=document.getElementById('missions-list');
+  if(!missions.length){el.innerHTML='<p class="empty">No missions yet</p>';return;}
+  el.innerHTML=missions.map((m,i)=>`
+    <div class="mission-item">
+      <button class="mission-del" data-action="del-mission" data-i="${i}" aria-label="Delete"><i class="ti ti-x"></i></button>
+      <input class="mission-name" value="${esc(m.name)}" placeholder="Mission name…" data-action="update-mission-name" data-i="${i}">
+      <textarea class="mission-notes" rows="2" placeholder="Purpose, vision, why it matters…" data-action="update-mission-notes" data-i="${i}">${esc(m.notes||'')}</textarea>
+    </div>`).join('');
+}
+
+function renderMissionGoals() {
+  const mgoals=S('mgoals')||[];
+  const el=document.getElementById('goals-mission-list');
+  if(!mgoals.length){el.innerHTML='<p class="empty">No goals yet</p>';return;}
+  el.innerHTML=mgoals.map((g,i)=>{
+    const tasks=g.tasks||[]; const open=g.open;
+    return `<div class="mission-item">
+      <button class="mission-del" data-action="del-mgoal" data-i="${i}" aria-label="Delete"><i class="ti ti-x"></i></button>
+      <input class="mission-name" value="${esc(g.name)}" placeholder="Goal name…" data-action="update-mgoal-name" data-i="${i}">
+      <textarea class="mission-notes" rows="1" placeholder="Notes, context, linked mission…" data-action="update-mgoal-notes" data-i="${i}">${esc(g.notes||'')}</textarea>
+      <button class="toggle-goals" data-action="toggle-mgoal-tasks" data-i="${i}">
+        <i class="ti ti-${open?'chevron-up':'chevron-down'}"></i>
+        ${tasks.length} task${tasks.length!==1?'s':''} ${open?'▲ hide':'▼ show'}
+      </button>
+      ${open?`<div class="mission-goals-section">
+        ${tasks.map((t,j)=>`<div class="goal-sub-item">
+          <input type="checkbox" ${t.done?'checked':''} data-action="toggle-mgoal-task" data-i="${i}" data-j="${j}">
+          <span class="${t.done?'done':''}">${esc(t.text)}</span>
+          <button class="del" data-action="del-mgoal-task" data-i="${i}" data-j="${j}" aria-label="Delete"><i class="ti ti-x"></i></button>
+        </div>`).join('')}
+        <div class="add-sub-row">
+          <input id="mgt-${i}" placeholder="Add a task…" data-action="mgoal-task-input" data-i="${i}">
+          <button data-action="add-mgoal-task" data-i="${i}"><i class="ti ti-plus"></i></button>
+        </div>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function initApp() {
+  document.getElementById('today-name').textContent=DAYS[now.getDay()];
+  document.getElementById('today-date').textContent=MONTHS[now.getMonth()]+' '+now.getDate()+', '+now.getFullYear();
+  const grat=S('grat_'+getTodayKey());
+  if(grat) document.getElementById('gratitude-input').value=grat;
+  renderDailyTodos(); renderWeeklyTodos(); renderGoals(); renderGratitudeLog();
+  renderMissions(); renderMissionGoals(); renderStars();
+}
+
+document.addEventListener('click', e => {
+  const el=e.target.closest('[data-action]');
+  if(!el) {
+    if(e.target===document.getElementById('modal-moments')) document.getElementById('modal-moments').style.display='none';
+    if(e.target===document.getElementById('modal-mood')) document.getElementById('modal-mood').style.display='none';
+    return;
+  }
+  const action=el.dataset.action, i=parseInt(el.dataset.i), j=parseInt(el.dataset.j);
+  const wk=getWeekKey();
+
+  if(action==='toggle-daily') { const k='daily_'+getTodayKey(); const t=S(k)||[]; t[i].done=!t[i].done; W(k,t); renderDailyTodos(); }
+  else if(action==='del-daily') { const k='daily_'+getTodayKey(); const t=S(k)||[]; t.splice(i,1); W(k,t); renderDailyTodos(); }
+  else if(action==='toggle-weekly') { const k='weekly_'+wk; const t=S(k)||[]; t[i].done=!t[i].done; W(k,t); renderWeeklyTodos(); }
+  else if(action==='del-weekly') { const k='weekly_'+wk; const t=S(k)||[]; t.splice(i,1); W(k,t); renderWeeklyTodos(); }
+  else if(action==='goal-dec') { const k='goal_progress_'+wk+'_'+i; W(k,Math.max(0,(S(k)||0)-1)); renderGoals(); }
+  else if(action==='goal-inc') { const k='goal_progress_'+wk+'_'+i; W(k,(S(k)||0)+1); renderGoals(); }
+  else if(action==='del-goal') { const g=S('goals')||[]; g.splice(i,1); W('goals',g); renderGoals(); }
+  else if(action==='set-mood') {
+    const n=parseInt(el.dataset.n); const k='mood_'+getTodayKey();
+    W(k, S(k)===n ? 0 : n); renderStars();
+  }
+  else if(action==='del-mission') { const m=S('missions')||[]; m.splice(i,1); W('missions',m); renderMissions(); }
+  else if(action==='del-mgoal') { const m=S('mgoals')||[]; m.splice(i,1); W('mgoals',m); renderMissionGoals(); }
+  else if(action==='toggle-mgoal-tasks') { const m=S('mgoals')||[]; m[i].open=!m[i].open; W('mgoals',m); renderMissionGoals(); }
+  else if(action==='toggle-mgoal-task') { const m=S('mgoals')||[]; m[i].tasks[j].done=!m[i].tasks[j].done; W('mgoals',m); renderMissionGoals(); }
+  else if(action==='del-mgoal-task') { const m=S('mgoals')||[]; m[i].tasks.splice(j,1); W('mgoals',m); renderMissionGoals(); }
+  else if(action==='add-mgoal-task') {
+    const inp=document.getElementById('mgt-'+i); if(!inp) return;
+    const text=inp.value.trim(); if(!text) return;
+    const m=S('mgoals')||[]; if(!m[i].tasks) m[i].tasks=[];
+    m[i].tasks.push({text,done:false}); W('mgoals',m); renderMissionGoals();
+  }
+});
+
+document.addEventListener('mouseover', e => {
+  const el=e.target.closest('[data-action="set-mood"]');
+  if(!el) return;
+  const n=parseInt(el.dataset.n);
+  document.querySelectorAll('#stars-row button').forEach((b,i)=>b.classList.toggle('lit',i<n));
+});
+document.addEventListener('mouseout', e => {
+  if(e.target.closest('#stars-row')) return;
+  renderStars();
+});
+
+document.addEventListener('input', e => {
+  const el=e.target;
+  const action=el.dataset.action;
+  if(el.id==='gratitude-input') { saveGratitude(); return; }
+  if(action==='update-mission-name') { const m=S('missions')||[]; if(m[parseInt(el.dataset.i)]) { m[parseInt(el.dataset.i)].name=el.value; W('missions',m); } }
+  if(action==='update-mission-notes') { const m=S('missions')||[]; if(m[parseInt(el.dataset.i)]) { m[parseInt(el.dataset.i)].notes=el.value; W('missions',m); } }
+  if(action==='update-mgoal-name') { const m=S('mgoals')||[]; if(m[parseInt(el.dataset.i)]) { m[parseInt(el.dataset.i)].name=el.value; W('mgoals',m); } }
+  if(action==='update-mgoal-notes') { const m=S('mgoals')||[]; if(m[parseInt(el.dataset.i)]) { m[parseInt(el.dataset.i)].notes=el.value; W('mgoals',m); } }
+});
+
+document.addEventListener('keydown', e => {
+  if(e.key!=='Enter') return;
+  if(e.target.id==='daily-input') addDailyTodo();
+  else if(e.target.id==='weekly-input') addWeeklyTodo();
+  else if(e.target.id==='goal-name-input'||e.target.id==='goal-target-input') addGoal();
+  else if(e.target.dataset.action==='mgoal-task-input') {
+    const i=parseInt(e.target.dataset.i);
+    const text=e.target.value.trim(); if(!text) return;
+    const m=S('mgoals')||[]; if(!m[i].tasks) m[i].tasks=[];
+    m[i].tasks.push({text,done:false}); W('mgoals',m); renderMissionGoals();
+  }
+});
+
+document.getElementById('nav-daily').addEventListener('click',()=>switchView('daily'));
+document.getElementById('nav-weekly').addEventListener('click',()=>switchView('weekly'));
+document.getElementById('nav-missions').addEventListener('click',()=>switchView('missions'));
+document.getElementById('daily-add-btn').addEventListener('click',addDailyTodo);
+document.getElementById('weekly-add-btn').addEventListener('click',addWeeklyTodo);
+document.getElementById('goal-add-btn').addEventListener('click',addGoal);
+document.getElementById('moments-btn').addEventListener('click',openMomentsModal);
+document.getElementById('moments-close').addEventListener('click',()=>document.getElementById('modal-moments').style.display='none');
+document.getElementById('mood-cal-btn').addEventListener('click',openMoodModal);
+document.getElementById('mood-close').addEventListener('click',()=>document.getElementById('modal-mood').style.display='none');
+document.getElementById('mood-prev').addEventListener('click',()=>{ moodMonthOffset--; renderMoodGrid(); });
+document.getElementById('mood-next').addEventListener('click',()=>{ moodMonthOffset++; renderMoodGrid(); });
+document.getElementById('add-mission-btn').addEventListener('click',()=>{
+  const m=S('missions')||[]; m.push({name:'',notes:''}); W('missions',m); renderMissions();
+  setTimeout(()=>{ const inputs=document.querySelectorAll('.mission-name'); if(inputs.length) inputs[inputs.length-1].focus(); },50);
+});
+document.getElementById('add-mgoal-btn').addEventListener('click',()=>{
+  const m=S('mgoals')||[]; m.push({name:'',notes:'',tasks:[],open:true}); W('mgoals',m); renderMissionGoals();
+  setTimeout(()=>{ const inputs=document.querySelectorAll('#goals-mission-list .mission-name'); if(inputs.length) inputs[inputs.length-1].focus(); },50);
+});
+document.getElementById('signin-btn').addEventListener('click',()=>{
+  signInWithRedirect(auth, new GoogleAuthProvider());
+});
+document.getElementById('signout-btn').addEventListener('click',()=>fbSignOut(auth));
+
+getRedirectResult(auth).catch(err => console.error('Redirect sign-in error:', err));
+
+onAuthStateChanged(auth, async user => {
+  if(user) {
+    uid=user.uid;
+    document.getElementById('user-name').textContent=user.displayName||user.email;
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    await loadFromFirestore();
+    initApp();
+  } else {
+    uid=null;
+    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
+  }
+});
+</script>
+</body>
+</html>
