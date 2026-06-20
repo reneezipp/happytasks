@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f4f0;
+    --bg3: #eceae3;
+    --text: #1a1a18;
+    --text2: #6b6a65;
+    --text3: #9b9a95;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --accent: #534AB7;
+    --accent-light: #EEEDFE;
+    --accent-text: #3C3489;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --green: #3B6D11;
+    --green-light: #EAF3DE;
+    --amber: #854F0B;
+    --amber-light: #FAEEDA;
+    --red: #A32D2D;
+    --red-light: #FCEBEB;
+    --teal: #0F6E56;
+    --teal-light: #E1F5EE;
+    --coral: #993C1D;
+    --coral-light: #FAECE7;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg2: #252522;
+      --bg3: #2e2e2a;
+      --text: #f0ede6;
+      --text2: #a09e98;
+      --text3: #6e6c66;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --accent: #7F77DD;
+      --accent-light: #26215C;
+      --accent-text: #AFA9EC;
+      --green: #97C459;
+      --green-light: #173404;
+      --amber: #EF9F27;
+      --amber-light: #412402;
+      --red: #F09595;
+      --red-light: #501313;
+      --teal: #5DCAA5;
+      --teal-light: #04342C;
+      --coral: #F0997B;
+      --coral-light: #4A1B0C;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg2);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--bg);
+    border-right: 0.5px solid var(--border);
+    padding: 1.5rem 0;
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo {
+    padding: 0 1.25rem 1.5rem;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text);
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-logo span { color: var(--accent); font-size: 22px; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.55rem 1.25rem;
+    cursor: pointer;
+    border-radius: 0;
+    color: var(--text2);
+    font-size: 14px;
+    transition: background 0.12s, color 0.12s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-item:hover { background: var(--bg2); color: var(--text); }
+  .nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+  .nav-item .icon { font-size: 17px; flex-shrink: 0; }
+
+  .nav-section {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text3);
+    padding: 1rem 1.25rem 0.3rem;
+  }
+
+  .main { flex: 1; padding: 2rem; max-width: 900px; }
+
+  /* Views */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Headings */
+  h1 { font-size: 22px; font-weight: 500; color: var(--text); margin-bottom: 0.25rem; }
+  h2 { font-size: 18px; font-weight: 500; color: var(--text); margin-bottom: 1rem; }
+  h3 { font-size: 15px; font-weight: 500; color: var(--text); }
+
+  .page-header { margin-bottom: 1.75rem; }
+  .page-header p { color: var(--text2); font-size: 14px; margin-top: 4px; }
+
+  /* Cards */
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-sm {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.875rem 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+
+  /* Metric cards */
+  .metric {
+    background: var(--bg2);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    text-align: center;
+  }
+  .metric-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .metric-value { font-size: 26px; font-weight: 500; color: var(--text); }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 6px;
+    background: var(--bg3);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.3s;
+  }
+  .progress-fill.green { background: var(--green); }
+  .progress-fill.amber { background: var(--amber); }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .badge-purple { background: var(--accent-light); color: var(--accent-text); }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-teal { background: var(--teal-light); color: var(--teal); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+
+  /* Task items */
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.65rem 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .task-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .task-item:first-child { padding-top: 0; }
+
+  .task-check {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--border2);
+    border-radius: 50%;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .task-check.done { background: var(--green); border-color: var(--green); }
+  .task-check.done::after { content: '✓'; color: white; font-size: 10px; }
+  .task-check:hover:not(.done) { border-color: var(--accent); }
+
+  .task-text { flex: 1; font-size: 14px; }
+  .task-text.done { text-decoration: line-through; color: var(--text3); }
+
+  .task-meta { font-size: 12px; color: var(--text3); flex-shrink: 0; }
+
+  /* Stars / mood */
+  .stars { display: flex; gap: 4px; }
+  .star {
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--border2);
+    transition: color 0.1s, transform 0.1s;
+    line-height: 1;
+  }
+  .star.lit { color: #EF9F27; }
+  .star:hover { transform: scale(1.2); }
+
+  /* Mood calendar */
+  .mood-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-header { font-size: 11px; color: var(--text3); text-align: center; padding: 2px 0; }
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 0.5px solid var(--border);
+    background: var(--bg2);
+    color: var(--text3);
+    transition: transform 0.1s;
+    position: relative;
+  }
+  .cal-day:hover { transform: scale(1.1); z-index: 1; }
+  .cal-day.today { border: 1.5px solid var(--accent); color: var(--text); }
+  .cal-day.empty { background: transparent; border-color: transparent; cursor: default; }
+  .cal-day[data-mood="1"] { background: #F09595; color: #501313; border-color: #E24B4A; }
+  .cal-day[data-mood="2"] { background: #FAC775; color: #412402; border-color: #EF9F27; }
+  .cal-day[data-mood="3"] { background: #D3D1C7; color: #2C2C2A; border-color: #888780; }
+  .cal-day[data-mood="4"] { background: #9FE1CB; color: #04342C; border-color: #1D9E75; }
+  .cal-day[data-mood="5"] { background: #AFA9EC; color: #26215C; border-color: #7F77DD; }
+
+  /* Buttons */
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    outline: none;
+  }
+
+  .btn {
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.12s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover { background: var(--bg2); }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-sm { padding: 0.3rem 0.75rem; font-size: 13px; }
+  .btn-icon { padding: 0.3rem 0.5rem; color: var(--text3); border-color: transparent; }
+  .btn-icon:hover { background: var(--bg2); color: var(--text); }
+  .btn-danger { border-color: var(--red); color: var(--red); }
+  .btn-danger:hover { background: var(--red-light); }
+
+  /* Forms */
+  input[type="text"], input[type="date"], select, textarea {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 0.5rem 0.75rem;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    width: 100%;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .form-row { margin-bottom: 0.75rem; }
+  .form-label { font-size: 13px; color: var(--text2); margin-bottom: 4px; display: block; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    width: 420px;
+    max-width: 95vw;
+    border: 0.5px solid var(--border2);
+  }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+  .modal-title { font-size: 16px; font-weight: 500; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; }
+
+  /* Hierarchy tree */
+  .tree-item { margin-bottom: 0.5rem; }
+  .tree-dream { border-left: 3px solid var(--accent); padding-left: 12px; margin-bottom: 1.25rem; }
+  .tree-goal { border-left: 2px solid var(--teal); padding-left: 10px; margin: 0.5rem 0 0.5rem 12px; }
+  .tree-task { padding-left: 22px; margin: 4px 0; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+
+  .expandable { cursor: pointer; user-select: none; }
+  .expand-icon { font-size: 12px; color: var(--text3); display: inline-block; transition: transform 0.15s; }
+  .expand-icon.open { transform: rotate(90deg); }
+  .children { overflow: hidden; }
+
+  /* Milestone */
+  .milestone-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .milestone-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 0.75rem; }
+  .milestone-title { font-weight: 500; font-size: 15px; }
+  .milestone-tasks { margin-top: 0.75rem; }
+
+  /* Week nav */
+  .week-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
+  .week-nav h2 { margin: 0; }
+  .week-label { font-size: 14px; color: var(--text2); }
+
+  /* Tooltip for mood cal */
+  .cal-tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: var(--bg);
+    font-size: 11px;
+    padding: 3px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s;
+    z-index: 10;
+  }
+  .cal-day:hover .cal-tooltip { opacity: 1; }
+
+  /* Today section header */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text3);
+    font-size: 14px;
+  }
+
+  /* Scroll to top */
+  .divider { height: 0.5px; background: var(--border); margin: 1.25rem 0; }
+
+  /* Pill select for dream/goal in modal */
+  .pill-select {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .pill {
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border2);
+    font-size: 13px;
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--text2);
+    transition: all 0.12s;
+  }
+  .pill.selected { background: var(--accent-light); color: var(--accent-text); border-color: var(--accent); }
+
+  .inline-add {
+    display: flex;
+    gap: 8px;
+    margin-top: 0.75rem;
+  }
+  .inline-add input { flex: 1; }
+
+  /* Color dot */
+  .color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  /* Subtle row actions */
+  .row-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.1s; }
+  .card-sm:hover .row-actions,
+  .task-item:hover .row-actions,
+  .tree-dream:hover > .row-actions,
+  .milestone-header:hover .row-actions { opacity: 1; }
+
+  @media (max-width: 640px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; min-height: auto; position: static; }
+    .main { padding: 1rem; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <span>✦</span> Life Tracker
+    </div>
+    <div class="nav-section">Today</div>
+    <button class="nav-item active" data-view="dashboard">
+      <span class="icon">⊞</span> Dashboard
+    </button>
+    <button class="nav-item" data-view="mood">
+      <span class="icon">◑</span> Mood calendar
+    </button>
+    <div class="nav-section">Plan</div>
+    <button class="nav-item" data-view="dreams">
+      <span class="icon">◈</span> Dreams
+    </button>
+    <button class="nav-item" data-view="goals">
+      <span class="icon">◎</span> Goals
+    </button>
+    <button class="nav-item" data-view="tasks">
+      <span class="icon">◻</span> Tasks
+    </button>
+    <button class="nav-item" data-view="milestones">
+      <span class="icon">⬡</span> Weekly milestones
+    </button>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="view-dashboard" class="view active">
+      <div class="page-header">
+        <h1 id="dashboard-date"></h1>
+        <p>Here's where you stand today</p>
+      </div>
+
+      <!-- Mood row -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="section-header">
+          <h3>Today's mood</h3>
+          <span id="mood-label" style="font-size:13px;color:var(--text3);">How are you feeling?</span>
+        </div>
+        <div class="stars" id="today-stars">
+          <span class="star" data-v="1">★</span>
+          <span class="star" data-v="2">★</span>
+          <span class="star" data-v="3">★</span>
+          <span class="star" data-v="4">★</span>
+          <span class="star" data-v="5">★</span>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="grid-3" style="margin-bottom:1rem;">
+        <div class="metric">
+          <div class="metric-label">Tasks today</div>
+          <div class="metric-value" id="stat-today">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Completed</div>
+          <div class="metric-value" id="stat-done">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Week progress</div>
+          <div class="metric-value" id="stat-week">0%</div>
+        </div>
+      </div>
+
+      <!-- Today's tasks -->
+      <div class="card">
+        <div class="section-header">
+          <h3>Today's tasks</h3>
+          <button class="btn btn-sm" id="add-today-task-btn">+ Add task</button>
+        </div>
+        <div id="today-tasks-list"></div>
+      </div>
+
+      <!-- Weekly milestone progress -->
+      <div class="card">
+        <div class="section-header">
+          <h3>Weekly milestone progress</h3>
+          <span id="week-range-label" style="font-size:13px;color:var(--text3);"></span>
+        </div>
+        <div id="dashboard-milestones"></div>
+      </div>
+    </div>
+
+    <!-- MOOD CALENDAR -->
+    <div id="view-mood" class="view">
+      <div class="page-header">
+        <h1>Mood calendar</h1>
+        <p>Color-coded view of your daily mood</p>
+      </div>
+
+      <div class="card" style="margin-bottom:1rem;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:0.5rem;">
+          <span style="font-size:13px;font-weight:500;color:var(--text2);">Legend:</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);">
+            <span style="width:14px;height:14px;border-radius:3px;background:#F09595;display:inline-block;"></span> 1 — hard
+          </span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);">
+            <span style="width:14px;height:14px;border-radius:3px;background:#FAC775;display:inline-block;"></span> 2 — low
+          </span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);">
+            <span style="width:14px;height:14px;border-radius:3px;background:#D3D1C7;display:inline-block;"></span> 3 — okay
+          </span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);">
+            <span style="width:14px;height:14px;border-radius:3px;background:#9FE1CB;display:inline-block;"></span> 4 — good
+          </span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);">
+            <span style="width:14px;height:14px;border-radius:3px;background:#AFA9EC;display:inline-block;"></span> 5 — great
+          </span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <button class="btn btn-sm" id="cal-prev">← Prev</button>
+          <h3 id="cal-month-label"></h3>
+          <button class="btn btn-sm" id="cal-next">Next →</button>
+        </div>
+        <div id="mood-calendar-grid"></div>
+      </div>
+
+      <!-- Quick log today's mood from here too -->
+      <div class="card">
+        <h3 style="margin-bottom:0.75rem;">Log today's mood</h3>
+        <div class="stars" id="cal-stars">
+          <span class="star" data-v="1">★</span>
+          <span class="star" data-v="2">★</span>
+          <span class="star" data-v="3">★</span>
+          <span class="star" data-v="4">★</span>
+          <span class="star" data-v="5">★</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DREAMS -->
+    <div id="view-dreams" class="view">
+      <div class="page-header">
+        <div class="section-header" style="margin-bottom:0;">
+          <div>
+            <h1>Dreams</h1>
+            <p>Your big-picture aspirations</p>
+          </div>
+          <button class="btn btn-primary" id="add-dream-btn">+ New dream</button>
+        </div>
+      </div>
+      <div id="dreams-list"></div>
+    </div>
+
+    <!-- GOALS -->
+    <div id="view-goals" class="view">
+      <div class="page-header">
+        <div class="section-header" style="margin-bottom:0;">
+          <div>
+            <h1>Goals</h1>
+            <p>Concrete goals under each dream</p>
+          </div>
+          <button class="btn btn-primary" id="add-goal-btn">+ New goal</button>
+        </div>
+      </div>
+      <div id="goals-list"></div>
+    </div>
+
+    <!-- TASKS -->
+    <div id="view-tasks" class="view">
+      <div class="page-header">
+        <div class="section-header" style="margin-bottom:0;">
+          <div>
+            <h1>Tasks</h1>
+            <p>Action items under each goal</p>
+          </div>
+          <button class="btn btn-primary" id="add-task-btn">+ New task</button>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
+        <select id="task-filter-goal" style="width:auto;flex:0;">
+          <option value="">All goals</option>
+        </select>
+        <select id="task-filter-status" style="width:auto;flex:0;">
+          <option value="">All</option>
+          <option value="pending">Pending</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+
+      <div id="tasks-list"></div>
+    </div>
+
+    <!-- MILESTONES -->
+    <div id="view-milestones" class="view">
+      <div class="page-header">
+        <div class="section-header" style="margin-bottom:0;">
+          <div>
+            <h1>Weekly milestones</h1>
+            <p>Groups of tasks that form a weekly goal</p>
+          </div>
+          <button class="btn btn-primary" id="add-milestone-btn">+ New milestone</button>
+        </div>
+      </div>
+
+      <div class="week-nav">
+        <button class="btn btn-sm" id="ms-prev">← Prev week</button>
+        <span class="week-label" id="ms-week-label"></span>
+        <button class="btn btn-sm" id="ms-next">Next week →</button>
+      </div>
+
+      <div id="milestones-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Add</span>
+      <button class="btn btn-icon" id="modal-close" style="font-size:18px;">✕</button>
+    </div>
+    <div id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions">
+      <button class="btn" id="modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+const DB_KEY = 'lt_v1';
+let db = {
+  dreams: [],
+  goals: [],
+  tasks: [],
+  milestones: [],
+  moods: {}
+};
+
+function load() {
+  try { const s = localStorage.getItem(DB_KEY); if (s) db = JSON.parse(s); } catch(e){}
+}
+function save() { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ── Date helpers ──
+const today = () => new Date().toISOString().slice(0,10);
+const todayDate = new Date();
+
+function weekBounds(offset=0) {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay() + 1 + offset*7); // Mon
+  const start = d.toISOString().slice(0,10);
+  const end = new Date(d.getFullYear(), d.getMonth(), d.getDate()+6).toISOString().slice(0,10);
+  return {start, end};
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return new Date(+y,+m-1,+d).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+
+function daysBetween(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+
+// ── Navigation ──
+let currentView = 'dashboard';
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentView = btn.dataset.view;
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-'+currentView).classList.add('active');
+    renderAll();
+  });
+});
+
+// ── Modal ──
+let modalSaveCb = null;
+
+function openModal(title, bodyHTML, saveCb) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  modalSaveCb = saveCb;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  modalSaveCb = null;
+}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', e => { if(e.target===document.getElementById('modal-overlay')) closeModal(); });
+document.getElementById('modal-save').addEventListener('click', () => { if(modalSaveCb) modalSaveCb(); });
+
+// ── Mood ──
+const MOOD_LABELS = ['','Hard day','Low energy','Doing okay','Feeling good','Amazing!'];
+
+function setMood(val) {
+  db.moods[today()] = val;
+  save();
+  renderMoodStars('today-stars', val);
+  renderMoodStars('cal-stars', val);
+  document.getElementById('mood-label').textContent = MOOD_LABELS[val];
+  renderCalendar();
+  renderDashboardStats();
+}
+
+function renderMoodStars(containerId, val) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.querySelectorAll('.star').forEach(s => {
+    s.classList.toggle('lit', +s.dataset.v <= val);
+  });
+}
+
+function attachStars(containerId) {
+  const c = document.getElementById(containerId);
+  if(!c) return;
+  c.querySelectorAll('.star').forEach(s => {
+    s.addEventListener('click', () => setMood(+s.dataset.v));
+    s.addEventListener('mouseenter', () => {
+      c.querySelectorAll('.star').forEach(ss => ss.classList.toggle('lit', +ss.dataset.v <= +s.dataset.v));
+    });
+    s.addEventListener('mouseleave', () => {
+      const cur = db.moods[today()] || 0;
+      c.querySelectorAll('.star').forEach(ss => ss.classList.toggle('lit', +ss.dataset.v <= cur));
+    });
+  });
+}
+
+// ── Calendar ──
+let calYear = todayDate.getFullYear();
+let calMonth = todayDate.getMonth();
+
+function renderCalendar() {
+  const grid = document.getElementById('mood-calendar-grid');
+  if(!grid) return;
+  const label = document.getElementById('cal-month-label');
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  label.textContent = months[calMonth] + ' ' + calYear;
+
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html = days.map(d=>`<div class="cal-header">${d}</div>`).join('');
+
+  const first = new Date(calYear, calMonth, 1);
+  const last = new Date(calYear, calMonth+1, 0);
+  let startDow = first.getDay(); // 0=Sun
+  startDow = startDow === 0 ? 6 : startDow - 1; // shift to Mon=0
+
+  for(let i=0; i<startDow; i++) html += `<div class="cal-day empty"></div>`;
+
+  const todayStr = today();
+  for(let d=1; d<=last.getDate(); d++) {
+    const iso = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const mood = db.moods[iso];
+    const isToday = iso === todayStr;
+    const tooltip = mood ? MOOD_LABELS[mood] : (iso <= todayStr ? 'No mood logged' : '');
+    html += `<div class="cal-day${isToday?' today':''}" data-date="${iso}"${mood?` data-mood="${mood}"`:''}>${d}<span class="cal-tooltip">${tooltip}</span></div>`;
+  }
+
+  grid.innerHTML = `<div class="mood-calendar">${html}</div>`;
+  grid.querySelectorAll('.cal-day:not(.empty)').forEach(el => {
+    el.addEventListener('click', () => {
+      const iso = el.dataset.date;
+      if (iso > todayStr) return;
+      const cur = db.moods[iso] || 0;
+      openModal(`Mood for ${formatDate(iso)}`,
+        `<div style="display:flex;justify-content:center;margin:1rem 0;">
+          <div class="stars" id="modal-stars" style="font-size:32px;">
+            ${[1,2,3,4,5].map(v=>`<span class="star${v<=cur?' lit':''}" data-v="${v}">★</span>`).join('')}
+          </div>
+        </div>
+        <p style="text-align:center;font-size:13px;color:var(--text2);">${MOOD_LABELS[cur]||'Tap a star'}</p>`,
+        null
+      );
+      // no save button needed — use stars in modal
+      document.getElementById('modal-actions').style.display = 'none';
+      setTimeout(()=>{
+        const ms = document.getElementById('modal-stars');
+        if(!ms) return;
+        ms.querySelectorAll('.star').forEach(s => {
+          s.style.cursor='pointer';
+          s.addEventListener('click', () => {
+            db.moods[iso] = +s.dataset.v;
+            save();
+            closeModal();
+            document.getElementById('modal-actions').style.display = '';
+            renderCalendar();
+            if(iso===todayStr) { renderMoodStars('today-stars', db.moods[iso]); document.getElementById('mood-label').textContent=MOOD_LABELS[db.moods[iso]]; }
+          });
+          s.addEventListener('mouseenter', ()=>{
+            ms.querySelectorAll('.star').forEach(ss=>ss.classList.toggle('lit',+ss.dataset.v<=+s.dataset.v));
+          });
+          s.addEventListener('mouseleave', ()=>{
+            ms.querySelectorAll('.star').forEach(ss=>ss.classList.toggle('lit',+ss.dataset.v<=cur));
+          });
+        });
+      }, 50);
+    });
+  });
+}
+
+document.getElementById('cal-prev').addEventListener('click', ()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); });
+document.getElementById('cal-next').addEventListener('click', ()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); });
+
+// ── Dashboard ──
+function renderDashboardDate() {
+  const el = document.getElementById('dashboard-date');
+  if(!el) return;
+  el.textContent = todayDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+}
+
+function renderDashboardStats() {
+  const todayTasks = db.tasks.filter(t => t.dueDate === today());
+  const doneTasks = todayTasks.filter(t => t.completed);
+  document.getElementById('stat-today').textContent = todayTasks.length;
+  document.getElementById('stat-done').textContent = doneTasks.length;
+
+  // Week progress across all milestones this week
+  const wb = weekBounds(0);
+  const weekMs = db.milestones.filter(m => m.weekStart >= wb.start && m.weekStart <= wb.end);
+  let total=0, done=0;
+  weekMs.forEach(m => {
+    const tids = m.taskIds || [];
+    total += tids.length;
+    done += tids.filter(id => { const t=db.tasks.find(t=>t.id===id); return t&&t.completed; }).length;
+  });
+  document.getElementById('stat-week').textContent = total ? Math.round(done/total*100)+'%' : '—';
+}
+
+function renderTodayTasks() {
+  const list = document.getElementById('today-tasks-list');
+  if(!list) return;
+  const todayTasks = db.tasks.filter(t => t.dueDate === today());
+  if(todayTasks.length === 0) {
+    list.innerHTML = `<div class="empty-state">No tasks for today. <button class="btn btn-sm" onclick="document.getElementById('add-today-task-btn').click()">Add one →</button></div>`;
+    return;
+  }
+  list.innerHTML = todayTasks.map(t => {
+    const goal = db.goals.find(g=>g.id===t.goalId);
+    const dream = goal ? db.dreams.find(d=>d.id===goal.dreamId) : null;
+    return `<div class="task-item">
+      <div class="task-check${t.completed?' done':''}" data-tid="${t.id}"></div>
+      <span class="task-text${t.completed?' done':''}">
+        ${t.title}
+        ${goal?`<span style="font-size:11px;color:var(--text3);margin-left:6px;">${goal.title}${dream?' · '+dream.title:''}</span>`:''}
+      </span>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.task-check').forEach(el => {
+    el.addEventListener('click', () => {
+      const t = db.tasks.find(t=>t.id===el.dataset.tid);
+      if(t){ t.completed = !t.completed; save(); renderAll(); }
+    });
+  });
+}
+
+function renderDashboardMilestones() {
+  const el = document.getElementById('dashboard-milestones');
+  if(!el) return;
+  const wb = weekBounds(0);
+  const wlabel = document.getElementById('week-range-label');
+  if(wlabel) wlabel.textContent = formatDate(wb.start) + ' – ' + formatDate(wb.end);
+
+  const weekMs = db.milestones.filter(m => m.weekStart >= wb.start && m.weekStart <= wb.end);
+  if(weekMs.length === 0) {
+    el.innerHTML = `<div class="empty-state">No milestones for this week.</div>`;
+    return;
+  }
+  el.innerHTML = weekMs.map(m => {
+    const tids = m.taskIds || [];
+    const total = tids.length;
+    const done = tids.filter(id => { const t=db.tasks.find(t=>t.id===id); return t&&t.completed; }).length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const goal = db.goals.find(g=>g.id===m.goalId);
+    const colorClass = pct===100?'green':(pct>=50?'amber':'');
+    return `<div style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:14px;font-weight:500;">${m.title}</span>
+        <span style="font-size:12px;color:var(--text2);">${done}/${total} tasks · ${pct}%</span>
+      </div>
+      ${goal?`<span class="badge badge-teal" style="margin-bottom:6px;">${goal.title}</span>`:''}
+      <div class="progress-bar"><div class="progress-fill ${colorClass}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('add-today-task-btn').addEventListener('click', () => {
+  openTaskModal(null, today());
+});
+
+// ── Dreams ──
+function renderDreams() {
+  const list = document.getElementById('dreams-list');
+  if(!list) return;
+  if(db.dreams.length === 0) {
+    list.innerHTML = `<div class="empty-state">No dreams yet. Tap "New dream" to start.</div>`;
+    return;
+  }
+  list.innerHTML = db.dreams.map(dream => {
+    const goals = db.goals.filter(g=>g.id===dream.id || g.dreamId===dream.id);
+    const gcount = goals.length;
+    const tcount = db.tasks.filter(t => goals.some(g=>g.id===t.goalId)).length;
+    return `<div class="card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div>
+          <h3 style="margin-bottom:4px;">${dream.title}</h3>
+          ${dream.desc?`<p style="font-size:13px;color:var(--text2);margin-bottom:8px;">${dream.desc}</p>`:''}
+          <span class="badge badge-purple">${gcount} goal${gcount!==1?'s':''}</span>
+          <span class="badge badge-teal" style="margin-left:4px;">${tcount} task${tcount!==1?'s':''}</span>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="btn btn-sm" data-edit="${dream.id}">Edit</button>
+          <button class="btn btn-sm btn-danger" data-del="${dream.id}">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', ()=>openDreamModal(db.dreams.find(d=>d.id===b.dataset.edit))));
+  list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', ()=>deleteDream(b.dataset.del)));
+}
+
+function openDreamModal(existing) {
+  const id = existing ? existing.id : null;
+  openModal(id?'Edit dream':'New dream',
+    `<div class="form-row"><label class="form-label">Title</label><input type="text" id="f-title" value="${existing?existing.title:''}" placeholder="e.g. Live with financial freedom"></div>
+     <div class="form-row"><label class="form-label">Description (optional)</label><textarea id="f-desc" placeholder="What does this dream look like?">${existing?existing.desc||'':''}</textarea></div>`,
+    () => {
+      const title = document.getElementById('f-title').value.trim();
+      if(!title) return;
+      if(id) { const d = db.dreams.find(d=>d.id===id); d.title=title; d.desc=document.getElementById('f-desc').value.trim(); }
+      else { db.dreams.push({id:uid(), title, desc:document.getElementById('f-desc').value.trim()}); }
+      save(); closeModal(); renderAll();
+    }
+  );
+}
+
+function deleteDream(id) {
+  if(!confirm('Delete this dream and all its goals and tasks?')) return;
+  const goals = db.goals.filter(g=>g.dreamId===id);
+  goals.forEach(g => {
+    db.tasks = db.tasks.filter(t=>t.goalId!==g.id);
+  });
+  db.goals = db.goals.filter(g=>g.dreamId!==id);
+  db.dreams = db.dreams.filter(d=>d.id!==id);
+  save(); renderAll();
+}
+
+document.getElementById('add-dream-btn').addEventListener('click', ()=>openDreamModal(null));
+
+// ── Goals ──
+function renderGoals() {
+  const list = document.getElementById('goals-list');
+  if(!list) return;
+  if(db.goals.length === 0) {
+    list.innerHTML = `<div class="empty-state">No goals yet. Add dreams first, then create goals.</div>`;
+    return;
+  }
+  // Group by dream
+  const byDream = {};
+  db.dreams.forEach(d=>{ byDream[d.id]=[]; });
+  db.goals.forEach(g=>{ if(byDream[g.dreamId]) byDream[g.dreamId].push(g); });
+
+  let html = '';
+  db.dreams.forEach(dream => {
+    const goals = byDream[dream.id] || [];
+    if(!goals.length) return;
+    html += `<div style="margin-bottom:1.5rem;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem;">
+        <span style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Dream</span>
+        <span style="font-weight:500;font-size:14px;color:var(--accent);">${dream.title}</span>
+      </div>`;
+    goals.forEach(g => {
+      const tcount = db.tasks.filter(t=>t.goalId===g.id).length;
+      const done = db.tasks.filter(t=>t.goalId===g.id&&t.completed).length;
+      html += `<div class="card-sm" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div>
+          <div style="font-weight:500;font-size:14px;">${g.title}</div>
+          ${g.desc?`<div style="font-size:12px;color:var(--text2);margin-top:2px;">${g.desc}</div>`:''}
+          <span class="badge badge-teal" style="margin-top:4px;">${done}/${tcount} tasks done</span>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="btn btn-sm" data-edit="${g.id}">Edit</button>
+          <button class="btn btn-sm btn-danger" data-del="${g.id}">Delete</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  list.innerHTML = html;
+  list.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', ()=>openGoalModal(db.goals.find(g=>g.id===b.dataset.edit))));
+  list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', ()=>deleteGoal(b.dataset.del)));
+}
+
+function openGoalModal(existing) {
+  const id = existing ? existing.id : null;
+  const dreamsOpts = db.dreams.map(d=>`<option value="${d.id}"${existing&&existing.dreamId===d.id?' selected':''}>${d.title}</option>`).join('');
+  if(!db.dreams.length) { alert('Create a dream first!'); return; }
+  openModal(id?'Edit goal':'New goal',
+    `<div class="form-row"><label class="form-label">Dream</label><select id="f-dream">${dreamsOpts}</select></div>
+     <div class="form-row"><label class="form-label">Title</label><input type="text" id="f-title" value="${existing?existing.title:''}" placeholder="e.g. Save $50k"></div>
+     <div class="form-row"><label class="form-label">Description (optional)</label><input type="text" id="f-desc" value="${existing?existing.desc||':''}" placeholder="More detail..."></div>`,
+    () => {
+      const title = document.getElementById('f-title').value.trim();
+      const dreamId = document.getElementById('f-dream').value;
+      if(!title||!dreamId) return;
+      if(id) { const g=db.goals.find(g=>g.id===id); g.title=title; g.dreamId=dreamId; g.desc=document.getElementById('f-desc').value.trim(); }
+      else { db.goals.push({id:uid(), dreamId, title, desc:document.getElementById('f-desc').value.trim()}); }
+      save(); closeModal(); renderAll();
+    }
+  );
+}
+
+function deleteGoal(id) {
+  if(!confirm('Delete this goal and all its tasks?')) return;
+  db.tasks = db.tasks.filter(t=>t.goalId!==id);
+  db.goals = db.goals.filter(g=>g.id!==id);
+  save(); renderAll();
+}
+
+document.getElementById('add-goal-btn').addEventListener('click', ()=>openGoalModal(null));
+
+// ── Tasks ──
+function renderTasksList() {
+  const list = document.getElementById('tasks-list');
+  if(!list) return;
+
+  // Populate goal filter
+  const gf = document.getElementById('task-filter-goal');
+  const selectedGoal = gf ? gf.value : '';
+  if(gf) {
+    const opts = '<option value="">All goals</option>' + db.goals.map(g=>`<option value="${g.id}"${g.id===selectedGoal?' selected':''}>${g.title}</option>`).join('');
+    gf.innerHTML = opts;
+  }
+
+  const statusFilter = document.getElementById('task-filter-status')?.value || '';
+
+  let tasks = [...db.tasks];
+  if(selectedGoal) tasks = tasks.filter(t=>t.goalId===selectedGoal);
+  if(statusFilter==='pending') tasks = tasks.filter(t=>!t.completed);
+  if(statusFilter==='done') tasks = tasks.filter(t=>t.completed);
+
+  if(tasks.length === 0) {
+    list.innerHTML = `<div class="empty-state">No tasks found.</div>`;
+    return;
+  }
+
+  // Group by goal
+  const byGoal = {};
+  db.goals.forEach(g=>{ byGoal[g.id]=[]; });
+  byGoal['_none'] = [];
+  tasks.forEach(t=>{ (byGoal[t.goalId||'_none']||byGoal['_none']).push(t); });
+
+  let html = '';
+  db.goals.forEach(goal => {
+    const gtasks = byGoal[goal.id]||[];
+    if(!gtasks.length) return;
+    const dream = db.dreams.find(d=>d.id===goal.dreamId);
+    html += `<div class="card" style="margin-bottom:1rem;">
+      <div style="margin-bottom:0.75rem;">
+        <h3>${goal.title}</h3>
+        ${dream?`<span class="badge badge-purple">${dream.title}</span>`:''}
+      </div>`;
+    gtasks.forEach(t => {
+      html += `<div class="task-item">
+        <div class="task-check${t.completed?' done':''}" data-tid="${t.id}"></div>
+        <span class="task-text${t.completed?' done':''}" style="flex:1;">${t.title}</span>
+        ${t.dueDate?`<span class="task-meta">${formatDate(t.dueDate)}</span>`:''}
+        <div style="display:flex;gap:4px;opacity:0;transition:opacity 0.1s;" class="row-hover-actions">
+          <button class="btn btn-icon btn-sm" data-edit-task="${t.id}" title="Edit">✎</button>
+          <button class="btn btn-icon btn-sm btn-danger" data-del-task="${t.id}" title="Delete">✕</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  if(byGoal['_none']?.length) {
+    html += `<div class="card">
+      <h3 style="margin-bottom:0.75rem;color:var(--text2);">No goal assigned</h3>`;
+    byGoal['_none'].forEach(t => {
+      html += `<div class="task-item">
+        <div class="task-check${t.completed?' done':''}" data-tid="${t.id}"></div>
+        <span class="task-text${t.completed?' done':''}">${t.title}</span>
+        ${t.dueDate?`<span class="task-meta">${formatDate(t.dueDate)}</span>`:''}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  list.innerHTML = html;
+  list.querySelectorAll('.task-check').forEach(el => {
+    el.addEventListener('click', () => {
+      const t = db.tasks.find(t=>t.id===el.dataset.tid);
+      if(t){ t.completed=!t.completed; save(); renderAll(); }
+    });
+  });
+  list.querySelectorAll('.card').forEach(c => {
+    c.addEventListener('mouseenter', ()=>c.querySelectorAll('.row-hover-actions').forEach(a=>a.style.opacity='1'));
+    c.addEventListener('mouseleave', ()=>c.querySelectorAll('.row-hover-actions').forEach(a=>a.style.opacity='0'));
+  });
+  list.querySelectorAll('[data-edit-task]').forEach(b => b.addEventListener('click', ()=>openTaskModal(db.tasks.find(t=>t.id===b.dataset.editTask))));
+  list.querySelectorAll('[data-del-task]').forEach(b => b.addEventListener('click', ()=>deleteTask(b.dataset.delTask)));
+}
+
+function openTaskModal(existing, defaultDate) {
+  const id = existing ? existing.id : null;
+  const goalsOpts = '<option value="">No goal</option>' + db.goals.map(g=>`<option value="${g.id}"${existing&&existing.goalId===g.id?' selected':''}>${g.title}</option>`).join('');
+  openModal(id?'Edit task':'New task',
+    `<div class="form-row"><label class="form-label">Title</label><input type="text" id="f-title" value="${existing?existing.title:''}" placeholder="e.g. Research savings accounts"></div>
+     <div class="form-row"><label class="form-label">Goal</label><select id="f-goal">${goalsOpts}</select></div>
+     <div class="form-row"><label class="form-label">Due date (optional)</label><input type="date" id="f-date" value="${existing?existing.dueDate||'':defaultDate||''}"></div>`,
+    () => {
+      const title = document.getElementById('f-title').value.trim();
+      if(!title) return;
+      if(id) {
+        const t=db.tasks.find(t=>t.id===id);
+        t.title=title; t.goalId=document.getElementById('f-goal').value||null;
+        t.dueDate=document.getElementById('f-date').value||null;
+      } else {
+        db.tasks.push({id:uid(), title, goalId:document.getElementById('f-goal').value||null, dueDate:document.getElementById('f-date').value||null, completed:false});
+      }
+      save(); closeModal(); renderAll();
+    }
+  );
+}
+
+function deleteTask(id) {
+  db.tasks = db.tasks.filter(t=>t.id!==id);
+  db.milestones.forEach(m=>{ m.taskIds=(m.taskIds||[]).filter(tid=>tid!==id); });
+  save(); renderAll();
+}
+
+document.getElementById('add-task-btn').addEventListener('click', ()=>openTaskModal(null));
+document.getElementById('task-filter-goal')?.addEventListener('change', renderTasksList);
+document.getElementById('task-filter-status')?.addEventListener('change', renderTasksList);
+
+// ── Milestones ──
+let msWeekOffset = 0;
+
+function renderMilestones() {
+  const wb = weekBounds(msWeekOffset);
+  document.getElementById('ms-week-label').textContent = formatDate(wb.start) + ' – ' + formatDate(wb.end);
+
+  const list = document.getElementById('milestones-list');
+  if(!list) return;
+
+  const weekMs = db.milestones.filter(m => m.weekStart >= wb.start && m.weekStart <= wb.end);
+
+  if(weekMs.length === 0) {
+    list.innerHTML = `<div class="empty-state">No milestones for this week. <button class="btn btn-sm" onclick="document.getElementById('add-milestone-btn').click()">Add milestone →</button></div>`;
+    return;
+  }
+
+  list.innerHTML = weekMs.map(m => {
+    const tids = m.taskIds || [];
+    const total = tids.length;
+    const done = tids.filter(id => { const t=db.tasks.find(t=>t.id===id); return t&&t.completed; }).length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const goal = db.goals.find(g=>g.id===m.goalId);
+    const dream = goal ? db.dreams.find(d=>d.id===goal.dreamId) : null;
+    const colorClass = pct===100?'green':(pct>=50?'amber':'');
+
+    const taskRows = tids.map(tid => {
+      const t = db.tasks.find(t=>t.id===tid);
+      if(!t) return '';
+      return `<div class="task-item">
+        <div class="task-check${t.completed?' done':''}" data-tid="${t.id}"></div>
+        <span class="task-text${t.completed?' done':''}">${t.title}</span>
+        ${t.dueDate?`<span class="task-meta">${formatDate(t.dueDate)}</span>`:''}
+      </div>`;
+    }).join('');
+
+    return `<div class="milestone-card">
+      <div class="milestone-header">
+        <div style="flex:1;">
+          <div class="milestone-title">${m.title}</div>
+          <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+            ${goal?`<span class="badge badge-teal">${goal.title}</span>`:''}
+            ${dream?`<span class="badge badge-purple">${dream.title}</span>`:''}
+            <span class="badge ${pct===100?'badge-green':pct>=50?'badge-amber':'badge-red'}">${pct}% done</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-sm" data-edit-ms="${m.id}">Edit</button>
+          <button class="btn btn-sm btn-danger" data-del-ms="${m.id}">Delete</button>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${colorClass}" style="width:${pct}%"></div></div>
+      ${total>0?`<div class="milestone-tasks">${taskRows}</div>`:`<div style="font-size:13px;color:var(--text3);margin-top:0.75rem;">No tasks linked yet — edit to add tasks.</div>`}
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.task-check').forEach(el => {
+    el.addEventListener('click', () => {
+      const t = db.tasks.find(t=>t.id===el.dataset.tid);
+      if(t){ t.completed=!t.completed; save(); renderAll(); }
+    });
+  });
+  list.querySelectorAll('[data-edit-ms]').forEach(b => b.addEventListener('click', ()=>openMilestoneModal(db.milestones.find(m=>m.id===b.dataset.editMs))));
+  list.querySelectorAll('[data-del-ms]').forEach(b => b.addEventListener('click', ()=>deleteMilestone(b.dataset.delMs)));
+}
+
+function openMilestoneModal(existing) {
+  const id = existing ? existing.id : null;
+  const wb = weekBounds(msWeekOffset);
+  const goalsOpts = '<option value="">No goal</option>' + db.goals.map(g=>`<option value="${g.id}"${existing&&existing.goalId===g.id?' selected':''}>${g.title}</option>`).join('');
+
+  // Build task checklist
+  const taskCheck = db.tasks.map(t => {
+    const checked = existing && (existing.taskIds||[]).includes(t.id);
+    const goal = db.goals.find(g=>g.id===t.goalId);
+    return `<label style="display:flex;align-items:center;gap:8px;font-size:14px;padding:4px 0;cursor:pointer;">
+      <input type="checkbox" value="${t.id}" ${checked?'checked':''} style="width:auto;">
+      ${t.title}${goal?` <span style="font-size:11px;color:var(--text3);">(${goal.title})</span>`:''}
+    </label>`;
+  }).join('') || '<span style="font-size:13px;color:var(--text3);">No tasks yet — create tasks first.</span>';
+
+  openModal(id?'Edit milestone':'New milestone',
+    `<div class="form-row"><label class="form-label">Title</label><input type="text" id="f-title" value="${existing?existing.title:''}" placeholder="e.g. Complete MVP features"></div>
+     <div class="form-row"><label class="form-label">Goal</label><select id="f-goal">${goalsOpts}</select></div>
+     <div class="form-row"><label class="form-label">Week starting</label><input type="date" id="f-week" value="${existing?existing.weekStart:wb.start}"></div>
+     <div class="form-row"><label class="form-label">Tasks in this milestone</label><div style="max-height:180px;overflow-y:auto;border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:8px;">${taskCheck}</div></div>`,
+    () => {
+      const title = document.getElementById('f-title').value.trim();
+      const weekStart = document.getElementById('f-week').value;
+      if(!title||!weekStart) return;
+      const checked = [...document.querySelectorAll('#modal-body input[type="checkbox"]:checked')].map(c=>c.value);
+      if(id) {
+        const m=db.milestones.find(m=>m.id===id);
+        m.title=title; m.goalId=document.getElementById('f-goal').value||null;
+        m.weekStart=weekStart; m.taskIds=checked;
+      } else {
+        db.milestones.push({id:uid(), title, goalId:document.getElementById('f-goal').value||null, weekStart, taskIds:checked});
+      }
+      save(); closeModal(); renderAll();
+    }
+  );
+}
+
+function deleteMilestone(id) {
+  db.milestones = db.milestones.filter(m=>m.id!==id);
+  save(); renderAll();
+}
+
+document.getElementById('add-milestone-btn').addEventListener('click', ()=>openMilestoneModal(null));
+document.getElementById('ms-prev').addEventListener('click', ()=>{ msWeekOffset--; renderMilestones(); renderDashboardMilestones(); });
+document.getElementById('ms-next').addEventListener('click', ()=>{ msWeekOffset++; renderMilestones(); renderDashboardMilestones(); });
+
+// ── Render all ──
+function renderAll() {
+  const v = currentView;
+  if(v==='dashboard') {
+    renderDashboardStats();
+    renderTodayTasks();
+    renderDashboardMilestones();
+  } else if(v==='mood') {
+    renderCalendar();
+    const m = db.moods[today()]||0;
+    renderMoodStars('cal-stars', m);
+  } else if(v==='dreams') {
+    renderDreams();
+  } else if(v==='goals') {
+    renderGoals();
+  } else if(v==='tasks') {
+    renderTasksList();
+  } else if(v==='milestones') {
+    renderMilestones();
+  }
+}
+
+// ── Seed sample data ──
+function seedData() {
+  if(db.dreams.length > 0) return;
+  const d1 = uid(), d2 = uid();
+  const g1 = uid(), g2 = uid(), g3 = uid();
+  const t1=uid(), t2=uid(), t3=uid(), t4=uid(), t5=uid();
+  const m1=uid();
+  const wb = weekBounds(0);
+
+  db.dreams = [
+    {id:d1, title:'Financial independence', desc:'Build wealth to have choices in life'},
+    {id:d2, title:'Live healthfully', desc:'Feel strong and energized every day'}
+  ];
+  db.goals = [
+    {id:g1, dreamId:d1, title:'Build an emergency fund', desc:'3–6 months of expenses'},
+    {id:g2, dreamId:d1, title:'Launch a side income', desc:''},
+    {id:g3, dreamId:d2, title:'Exercise consistently', desc:'4x per week'}
+  ];
+  db.tasks = [
+    {id:t1, goalId:g1, title:'Open a high-yield savings account', dueDate:today(), completed:false},
+    {id:t2, goalId:g1, title:'Set up automatic $200/mo transfer', dueDate:today(), completed:true},
+    {id:t3, goalId:g2, title:'Research freelance platforms', dueDate:today(), completed:false},
+    {id:t4, goalId:g3, title:'Morning run — 30 min', dueDate:today(), completed:true},
+    {id:t5, goalId:g3, title:'Strength training session', dueDate:today(), completed:false}
+  ];
+  db.milestones = [
+    {id:m1, goalId:g1, title:'Emergency fund kickoff week', weekStart:wb.start, taskIds:[t1,t2,t3]}
+  ];
+  db.moods[today()] = 4;
+  save();
+}
+
+// ── Init ──
+load();
+seedData();
+renderDashboardDate();
+const todayMood = db.moods[today()] || 0;
+renderMoodStars('today-stars', todayMood);
+if(todayMood) document.getElementById('mood-label').textContent = MOOD_LABELS[todayMood];
+attachStars('today-stars');
+attachStars('cal-stars');
+renderAll();
+</script>
+</body>
+</html>
